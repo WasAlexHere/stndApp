@@ -1,3 +1,7 @@
-.venv
 venv/
+build/
+dist/
+.venv
+.build
+.dist
 .idea
