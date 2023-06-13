@@ -7,10 +7,10 @@ trophy_icon = "trophy.png"
 
 class StndApp(rumps.App):
     def __init__(self):
-        self.count = 0
-        self.seconds = 60
-        self._stand_interval = 45 * self.seconds
-        self._sit_interval = 15 * self.seconds
+        self._stand_count = 0
+        self._seconds = 60
+        self._stand_interval = 45 * self._seconds
+        self._sit_interval = 15 * self._seconds
         self.max_stand_time = str((datetime.now() + timedelta(hours=4)).time())[:-7]
 
         self.config = {
@@ -23,7 +23,7 @@ class StndApp(rumps.App):
         super(StndApp, self).__init__("stndApp", icon=icon)
         self.menu = ["Start", "Stop"]
 
-        # rumps.debug_mode(True)
+        rumps.debug_mode(True)
 
         self.timer_update_time = rumps.Timer(self.ticker, 1)
         self.timer_stand_time = rumps.Timer(self.check_stand_time, 1)
@@ -49,7 +49,7 @@ class StndApp(rumps.App):
             item.stop()
         button = self.menu.get("Start")
         button.hidden = False
-        self.count = 0
+        self._stand_count = 0
 
     def ticker(self, _):
         date = datetime.now().time()
@@ -62,41 +62,63 @@ class StndApp(rumps.App):
         # print(f"STAND: {self.current_time}, {self.stop_time}")
         if self.current_time != self.max_stand_time:
             if self.current_time == self.stop_time:
-                self.sit_notification()
-                self.timer_stand_time.stop()
-                self.count += 1
+                response = self.sit_alert()
+                if response.clicked == 1:
+                    self.timer_stand_time.stop()
+                    self._stand_count += 1
 
-                self.delta = timedelta(seconds=self._sit_interval)
-                self.update_date()
-                self.timer_sit_time.start()
+                    self.delta = timedelta(seconds=self._sit_interval)
+                    self.update_date()
+                    self.timer_sit_time.start()
+                if response.clicked == 2:
+                    for item in rumps.timers():
+                        item.stop()
+                    button = self.menu.get("Start")
+                    button.hidden = False
+                    self._stand_count = 0
         else:
             self.stop_button()
 
     def check_sit_time(self, _):
         # print(f"SIT: {self.current_time}, {self.stop_time}")
         if self.current_time == self.stop_time:
-            self.stand_notification()
-            self.timer_sit_time.stop()
+            response = self.stand_alert()
+            if response.clicked == 1:
+                self.timer_sit_time.stop()
 
-            self.delta = timedelta(seconds=self._stand_interval)
-            self.update_date()
-            self.timer_stand_time.start()
+                self.delta = timedelta(seconds=self._stand_interval)
+                self.update_date()
+                self.timer_stand_time.start()
+            if response.clicked == 2:
+                for item in rumps.timers():
+                    item.stop()
+                button = self.menu.get("Start")
+                button.hidden = False
+                self._stand_count = 0
 
-    def stand_notification(self):
-        rumps.notification(
-            self.config["stand"],
-            None,
-            self.config["stand_message"],
-            icon=trophy_icon,
+    def stand_alert(self):
+        window = rumps.Window(
+            title=self.config["stand"],
+            message=self.config["stand_message"],
+            ok="Stand Up",
+            dimensions=(0, 0),
         )
+        window.icon = "trophy.png"
+        window.add_button("Stop")
 
-    def sit_notification(self):
-        rumps.notification(
-            self.config["sit"],
-            None,
-            self.config["sit_message"],
-            icon=icon,
+        return window.run()
+
+    def sit_alert(self):
+        window = rumps.Window(
+            title=self.config["sit"],
+            message=self.config["sit_message"],
+            ok="Sit Down",
+            dimensions=(0, 0),
         )
+        window.icon = "trophy.png"
+        window.add_button("Stop")
+
+        return window.run()
 
 
 if __name__ == "__main__":
