@@ -1,6 +1,6 @@
 from setuptools import setup
 
-APP = ['stndApp.py']
+APP = ['app.py']
 DATA_FILES = ['trophy.png', 'icon.png']
 OPTIONS = {
     'argv_emulation': True,
