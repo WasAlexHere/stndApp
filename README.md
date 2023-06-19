@@ -2,7 +2,7 @@
 
 # StndApp – macOS Menubar App
 
-Current release: [StndApp (Version 1.0)](https://github.com/WasAlexHere/stndApp/releases/tag/1.0.0)
+Current release: [StndApp (Version 0.1.0)](https://github.com/WasAlexHere/stndApp/releases/tag/0.1.0)
 
 ![Screenshot](screenshots/screenshot.png)
 
