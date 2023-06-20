@@ -17,3 +17,8 @@ Stand/Sit intervals are 45 and 15 minutes by default, but you can modify them by
 - Start/Pause/Stop functionality.
 - Displaying time for each routine with corresponding icon.
 - Modification of sit/stand intervals.
+
+
+## Upcoming ideas
+- Allow to stand for 4 hours a day.
+- Support dark mode.

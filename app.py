@@ -5,8 +5,6 @@ up_icon = "up.png"
 down_icon = "down.png"
 trophy_icon = "trophy.png"
 edit_icon = "edit.png"
-fail_icon = "fail.png"
-success_icon = "success.png"
 
 
 class LessThanAnHour(Exception):
@@ -112,7 +110,7 @@ class StndApp(rumps.App):
                 self.change_interval(
                     self.stand_timer,
                     self.sit_timer,
-                    self._stand_interval * self._seconds,
+                    self._sit_interval * self._seconds,
                     "sit",
                     down_icon,
                 )
@@ -132,7 +130,7 @@ class StndApp(rumps.App):
                 self.change_interval(
                     self.sit_timer,
                     self.stand_timer,
-                    self._sit_interval * self._seconds,
+                    self._stand_interval * self._seconds,
                     "stand",
                     up_icon,
                 )
@@ -182,11 +180,11 @@ class StndApp(rumps.App):
             f"Stand {self._stand_interval}, "
             f"Sit {self._sit_interval} minutes",
             subtitle=None,
-            icon=success_icon,
         )
 
-    def failed_notification(self, title, message):
-        rumps.notification(title=title, message=message, subtitle=None, icon=fail_icon)
+    @staticmethod
+    def failed_notification(title, message):
+        rumps.notification(title=title, message=message, subtitle=None)
 
     def change_interval(self, func1, func2, num, action, new):
         func1.stop()
