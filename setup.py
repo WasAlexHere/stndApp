@@ -1,7 +1,7 @@
 from setuptools import setup
 
 APP = ["app.py"]
-DATA_FILES = ["main.png", "up.png", "down.png", "trophy.png", "edit.png", "fail.png", "success.png"]
+DATA_FILES = ["main.png", "up.png", "down.png", "trophy.png", "edit.png"]
 OPTIONS = {
     'argv_emulation': True,
     'iconfile': 'icon.icns',
