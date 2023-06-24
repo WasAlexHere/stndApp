@@ -1,10 +1,12 @@
 import rumps
+from datetime import datetime
 
 main_icon = "main.png"
 up_icon = "up.png"
 down_icon = "down.png"
 trophy_icon = "trophy.png"
 edit_icon = "edit.png"
+rest_icon = "rest.png"
 
 
 class LessThanAnHour(Exception):
@@ -14,8 +16,9 @@ class LessThanAnHour(Exception):
 class StndApp(rumps.App):
     def __init__(self):
         self._seconds = 60
-        self._stand_interval = 45
-        self._sit_interval = 15
+        self._stand_interval = 30
+        self._sit_interval = 30
+        self._stand_mins_amount = 0
 
         self.config = {
             "stand": "Alright, alright, alright!",
@@ -24,10 +27,15 @@ class StndApp(rumps.App):
             "sit_message": f"Sit down for {self._sit_interval} minutes",
             "failed_value": "Unfortunately, you can only enter integer numbers!",
             "failed_less": "Unfortunately, you can only enter numbers less than 61!",
+            "rest": "Hold on, tiger!",
+            "rest_message": f"You've reached the limit for standing work (4 hours a day). \n"
+            f"(You're standing hours are {self._stand_mins_amount // 60}). \n"
+            f"Take a rest and continue tomorrow!",
         }
+
         self.last_timer = {"last": "stand"}
 
-        super(StndApp, self).__init__("stndApp", icon=main_icon)
+        super(StndApp, self).__init__("stndApp", icon=main_icon, template=True)
         self.menu = ["Start", "Stop", "Edit", None]
 
         # rumps.debug_mode(True)
@@ -35,27 +43,33 @@ class StndApp(rumps.App):
         self.stand_timer = rumps.Timer(self.countdown_stand, 1)
         self.sit_timer = rumps.Timer(self.countdown_sit, 1)
 
+        self.check_date = rumps.Timer(self.date_validation, 4 * 3600)
+        self.check_date.start()
+
         self.n = self._stand_interval * self._seconds
 
     @rumps.clicked("Start")
     def start_button(self, sender):
-        if sender.title == "Start":
-            if self.last_timer.get("last") == "stand":
-                self.stand_timer.start()
-                self.icon = up_icon
-                self.last_timer["last"] = "stand"
+        if self._stand_mins_amount / 60 < 4:
+            if sender.title == "Start":
+                if self.last_timer.get("last") == "stand":
+                    self.stand_timer.start()
+                    self.icon = up_icon
+                    self.last_timer["last"] = "stand"
+                else:
+                    self.sit_timer.start()
+                    self.icon = down_icon
+                    self.last_timer["last"] = "sit"
+                sender.title = "Pause"
+                self.menu["Edit"].hidden = True
             else:
-                self.sit_timer.start()
-                self.icon = down_icon
-                self.last_timer["last"] = "sit"
-            sender.title = "Pause"
-            self.menu["Edit"].hidden = True
+                sender.title = "Start"
+                if self.stand_timer.is_alive():
+                    self.stand_timer.stop()
+                if self.sit_timer.is_alive():
+                    self.sit_timer.stop()
         else:
-            sender.title = "Start"
-            if self.stand_timer.is_alive():
-                self.stand_timer.stop()
-            if self.sit_timer.is_alive():
-                self.sit_timer.stop()
+            self.rest_alert()
 
     @rumps.clicked("Stop")
     def stop_button(self, _):
@@ -69,7 +83,7 @@ class StndApp(rumps.App):
         self.n = self._stand_interval * self._seconds
         self.last_timer["last"] = "stand"
         self.menu["Edit"].hidden = False
-        self.icon = "main.png"
+        self.icon = main_icon
 
     @rumps.clicked("Edit")
     def edit_button(self, _):
@@ -82,6 +96,7 @@ class StndApp(rumps.App):
                     if 0 < new < 61:
                         self._stand_interval = new
                         self._sit_interval = 60 - self._stand_interval
+                        self.n = self._stand_interval * self._seconds
                         self.successful_notification()
                     else:
                         self.failed_notification(
@@ -114,6 +129,7 @@ class StndApp(rumps.App):
                     "sit",
                     down_icon,
                 )
+                self._stand_mins_amount += self._stand_interval
             if response.clicked == 2:
                 self.stop_button(_)
 
@@ -127,13 +143,17 @@ class StndApp(rumps.App):
         else:
             response = self.stand_alert()
             if response.clicked == 1:
-                self.change_interval(
-                    self.sit_timer,
-                    self.stand_timer,
-                    self._stand_interval * self._seconds,
-                    "stand",
-                    up_icon,
-                )
+                if self._stand_mins_amount / 60 < 4:
+                    self.change_interval(
+                        self.sit_timer,
+                        self.stand_timer,
+                        self._stand_interval * self._seconds,
+                        "stand",
+                        up_icon,
+                    )
+                else:
+                    self.rest_alert()
+                    self.stop_button(_)
             if response.clicked == 2:
                 self.stop_button(_)
 
@@ -144,7 +164,7 @@ class StndApp(rumps.App):
             ok="Stand Up",
             dimensions=(0, 0),
         )
-        window.icon = "trophy.png"
+        window.icon = trophy_icon
         window.add_button("Stop")
 
         return window.run()
@@ -156,7 +176,7 @@ class StndApp(rumps.App):
             ok="Sit Down",
             dimensions=(0, 0),
         )
-        window.icon = "trophy.png"
+        window.icon = trophy_icon
         window.add_button("Stop")
 
         return window.run()
@@ -193,6 +213,25 @@ class StndApp(rumps.App):
         func2.start()
         self.last_timer["last"] = action
         self.icon = new
+
+    def date_validation(self, _):
+        current_date = datetime.now()
+        year = datetime.now().year
+        month = datetime.now().month
+        day = datetime.now().day + 1
+
+        if current_date >= datetime(year, month, day):
+            self._stand_mins_amount = 0
+
+    def rest_alert(self):
+        window = rumps.Window(
+            title=self.config["rest"],
+            message=self.config["rest_message"],
+            dimensions=(0, 0),
+        )
+        window.icon = rest_icon
+
+        return window.run()
 
 
 if __name__ == "__main__":

@@ -1,12 +1,12 @@
 from setuptools import setup
 
 APP = ["app.py"]
-DATA_FILES = ["main.png", "up.png", "down.png", "trophy.png", "edit.png"]
+DATA_FILES = ["main.png", "up.png", "down.png", "trophy.png", "edit.png", "rest.png"]
 OPTIONS = {
     'argv_emulation': True,
     'iconfile': 'icon.icns',
     'plist': {
-        'CFBundleShortVersionString': '0.1.0',
+        'CFBundleShortVersionString': '1.0.0',
         'LSUIElement': True,
     },
     'packages': ['rumps'],
