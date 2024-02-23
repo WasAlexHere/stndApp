@@ -26,6 +26,7 @@ class StndApp(rumps.App):
         self._sit_interval = 30
         self._stand_minutes_amount = 0
         self._duration = 4
+        self._current_date = 0
 
         self.config = {
             "stand": "Alright, alright, alright!",
@@ -35,13 +36,18 @@ class StndApp(rumps.App):
             "failed_duration": "Unfortunately, you can only enter numbers less than 4!",
             "rest": "Hold on, tiger!",
             "rest_message": "You've reached the limit for standing work (4 hours a day).\n"
-                            "Take a rest and continue tomorrow!",
+            "Take a rest and continue tomorrow!",
         }
 
         self.last_timer = {"last": "stand"}
 
         super(StndApp, self).__init__("stndApp", icon=main_icon, template=True)
-        self.menu = ["Start", "Stop", ("Edit", ["Stand/Sit Interval", "Duration"]), None]
+        self.menu = [
+            "Start",
+            "Stop",
+            ("Edit", ["Stand/Sit Interval", "Duration"]),
+            None,
+        ]
         self.menu["Stop"].hidden = True
 
         # rumps.debug_mode(True)
@@ -49,14 +55,18 @@ class StndApp(rumps.App):
         self.stand_timer = rumps.Timer(self.countdown_stand, 1)
         self.sit_timer = rumps.Timer(self.countdown_sit, 1)
 
-        self.check_date = rumps.Timer(self.date_validation, 60)
-        self.check_date.start()
+        # self.check_date = rumps.Timer(self.date_validation, 60)
+        # self.check_date.start()
 
         self.n = self._stand_interval * self._seconds
 
     @rumps.clicked("Start")
     def start_button(self, sender):
-        if self._stand_minutes_amount / 60 < self._duration:
+        self._current_date = datetime.now()
+        # print(self._current_date)
+        if self._stand_minutes_amount / 60 < self._duration or self.date_validation(
+            self._current_date
+        ):
             self.menu["Stop"].hidden = False
             if sender.title == "Start":
                 if self.last_timer.get("last") == "stand":
@@ -99,7 +109,7 @@ class StndApp(rumps.App):
             response = self.edit_alert(
                 title="Edit interval",
                 message=f"Type new stand interval (previous {self._stand_interval} minutes).\n"
-                        f"The sit interval will be update automatically."
+                f"The sit interval will be update automatically.",
             )
 
             if response.clicked:
@@ -112,15 +122,15 @@ class StndApp(rumps.App):
                         self.send_notification(
                             title="Updated sit/stand interval!",
                             message=f"New intervals are:\n"
-                                    f"Stand: {self._stand_interval}, "
-                                    f"Sit: {self._sit_interval} minutes",
-                            icon=success_icon
+                            f"Stand: {self._stand_interval}, "
+                            f"Sit: {self._sit_interval} minutes",
+                            icon=success_icon,
                         )
                     else:
                         self.send_notification(
                             title="More than 60 !",
                             message=self.config["failed_less"],
-                            icon=fail_icon
+                            icon=fail_icon,
                         )
                         raise MoreThanAnHour(
                             "The input value should be more than 0 and less than 61"
@@ -129,7 +139,7 @@ class StndApp(rumps.App):
                     self.send_notification(
                         title="Incorrect input number!",
                         message=self.config["failed_value"],
-                        icon=fail_icon
+                        icon=fail_icon,
                     )
                     raise ValueError("Invalid literal for int() with base 10")
 
@@ -138,7 +148,7 @@ class StndApp(rumps.App):
         if not (self.sit_timer.is_alive() or self.stand_timer.is_alive()):
             response = self.edit_alert(
                 title="Edit duration",
-                message=f"Type new duration for standing work (previous {self._duration} hours)"
+                message=f"Type new duration for standing work (previous {self._duration} hours)",
             )
 
             if response.clicked:
@@ -149,12 +159,13 @@ class StndApp(rumps.App):
                         self.send_notification(
                             title="Updated duration of standing work!",
                             message=f"New duration is: {self._duration}",
-                            icon=success_icon)
+                            icon=success_icon,
+                        )
                     else:
                         self.send_notification(
                             title="More than 4 hours a day!",
                             message=self.config["failed_duration"],
-                            icon=fail_icon
+                            icon=fail_icon,
                         )
                         raise MoreThanAverage(
                             "The input value should be more than 0 and less or equal 4"
@@ -163,7 +174,7 @@ class StndApp(rumps.App):
                     self.send_notification(
                         title="Incorrect input number!",
                         message=self.config["failed_value"],
-                        icon=fail_icon
+                        icon=fail_icon,
                     )
                     raise ValueError("Invalid literal for int() with base 10")
 
@@ -198,7 +209,10 @@ class StndApp(rumps.App):
         else:
             response = self.stand_alert()
             if response.clicked == 1:
-                if self._stand_minutes_amount / 60 < 4:
+                self._current_date = datetime.now()
+                if self._stand_minutes_amount / 60 < 4 or self.date_validation(
+                    self._current_date
+                ):
                     self.change_position(
                         self.sit_timer,
                         self.stand_timer,
@@ -227,8 +241,8 @@ class StndApp(rumps.App):
     def sit_alert(self):
         window = rumps.Window(
             title=self.config["sit"],
-            message=f'Sit down for {self._sit_interval} minutes\n'
-                    f'Total amount of stand time (mins): {self._stand_minutes_amount}',
+            message=f"Sit down for {self._sit_interval} minutes\n"
+            f"Total amount of stand time (mins): {self._stand_minutes_amount}",
             ok="Sit Down",
             dimensions=(0, 0),
         )
@@ -253,7 +267,7 @@ class StndApp(rumps.App):
         window = rumps.Window(
             title=self.config["rest"],
             message=f"{self.config['rest_message']}\n"
-                    f"(You're standing hours are {self._stand_minutes_amount // 60}).",
+            f"(You're standing hours are {self._stand_minutes_amount // 60}).",
             dimensions=(0, 0),
         )
         window.icon = rest_icon
@@ -272,14 +286,15 @@ class StndApp(rumps.App):
         self.last_timer["last"] = action
         self.icon = new
 
-    def date_validation(self, _):
-        current_date = datetime.now()
+    def date_validation(self, c_date):
         year = datetime.now().year
         month = datetime.now().month
         day = datetime.now().day + 1
 
-        if current_date >= datetime(year, month, day):
+        if c_date >= datetime(year, month, day):
             self._stand_minutes_amount = 0
+            return False
+        return True
 
 
 if __name__ == "__main__":
