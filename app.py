@@ -63,10 +63,9 @@ class StndApp(rumps.App):
     @rumps.clicked("Start")
     def start_button(self, sender):
         self._current_date = datetime.now()
-        # print(self._current_date)
-        if self._stand_minutes_amount / 60 < self._duration or self.date_validation(
-            self._current_date
-        ):
+        # print(self._stand_minutes_amount / 60 < self._duration)
+        # print(self.date_validation(self._current_date))
+        if self.date_validation(self._current_date) and self._stand_minutes_amount / 60 < self._duration:
             self.menu["Stop"].hidden = False
             if sender.title == "Start":
                 if self.last_timer.get("last") == "stand":
@@ -210,7 +209,7 @@ class StndApp(rumps.App):
             response = self.stand_alert()
             if response.clicked == 1:
                 self._current_date = datetime.now()
-                if self._stand_minutes_amount / 60 < 4 or self.date_validation(
+                if self._stand_minutes_amount / 60 < self._duration or self.date_validation(
                     self._current_date
                 ):
                     self.change_position(
@@ -291,8 +290,9 @@ class StndApp(rumps.App):
         month = datetime.now().month
         day = datetime.now().day + 1
 
-        if c_date >= datetime(year, month, day):
+        if c_date > datetime(year, month, day):
             self._stand_minutes_amount = 0
+            self._current_date = datetime.now()
             return False
         return True
 

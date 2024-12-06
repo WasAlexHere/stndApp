@@ -15,7 +15,7 @@ OPTIONS = {
     'argv_emulation': True,
     'iconfile': 'icon.icns',
     'plist': {
-        'CFBundleShortVersionString': '1.2.0',
+        'CFBundleShortVersionString': '1.3.0',
         'LSUIElement': True,
     },
     'packages': ['rumps'],
@@ -29,3 +29,5 @@ setup(
     setup_requires=['py2app'],
     install_requires=OPTIONS['packages']
 )
+
+# python setup.py py2app
